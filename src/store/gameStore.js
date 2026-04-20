@@ -96,6 +96,8 @@ const useGameStore = create((set, get) => ({
   offlineEarnings: null,
   screenShake: false,
   levelUpModal: null,
+  goldenBooster: null, // {id, x, y}
+  frenzyMode: false,
   
   // ===== UI =====
   activeTab: 'studio',
@@ -165,6 +167,10 @@ const useGameStore = create((set, get) => ({
       if (s.effect.tapBonus) tapBonus += s.effect.tapBonus;
       if (s.effect.equipDiscount) equipDiscount *= s.effect.equipDiscount;
     });
+    if (state.frenzyMode) {
+      tapBonus += 100;
+      viewMult *= 10;
+    }
     return { followerMult, viewMult, incomeMult, tapBonus, equipDiscount };
   },
 
@@ -413,7 +419,9 @@ const useGameStore = create((set, get) => ({
     const interval = 50;
     let progress = 0;
     const timer = setInterval(() => {
-      progress += (interval / duration) * 100;
+      const currentState = get();
+      const increment = (interval / duration) * 100 * (currentState.frenzyMode ? 3 : 1);
+      progress += increment;
       if (progress >= 100) {
         clearInterval(timer);
         const titles = VIDEO_TITLES[nicheId] || ['AI видео'];
@@ -589,7 +597,7 @@ const useGameStore = create((set, get) => ({
     return false;
   },
 
-  // --- RANDOM EVENT ---
+  // --- EVENTS & FRENZY ---
   triggerRandomEvent: () => {
     const state = get();
     if (state.activeEvent) return;
@@ -620,6 +628,24 @@ const useGameStore = create((set, get) => ({
   closePublishModal: () => set({ showPublishModal: false, pendingVideo: null }),
   dismissOffline: () => set({ offlineEarnings: null }),
   dismissLevelUp: () => set({ levelUpModal: null }),
+
+  spawnGoldenBooster: () => {
+    const state = get();
+    if (state.goldenBooster || state.frenzyMode) return;
+    const x = 10 + Math.random() * 80;
+    const y = 20 + Math.random() * 60;
+    set({ goldenBooster: { id: Date.now(), x, y } });
+    setTimeout(() => {
+      const currentState = get();
+      if (currentState.goldenBooster) set({ goldenBooster: null });
+    }, 7000);
+  },
+
+  activateFrenzy: () => {
+    set({ goldenBooster: null, frenzyMode: true });
+    haptic.heavy();
+    setTimeout(() => set({ frenzyMode: false }), 15000);
+  },
 
   // --- INIT ---
   initGame: () => {
@@ -656,6 +682,23 @@ const useGameStore = create((set, get) => ({
       }
       saveGame(get());
     }
+
+    setInterval(() => {
+      const state = useGameStore.getState();
+      state.tickCompute();
+      state.tickVideos();
+      state.checkAchievements();
+    }, 1000);
+    
+    setInterval(() => {
+      useGameStore.getState().triggerRandomEvent();
+    }, 60000);
+
+    setInterval(() => {
+      if (Math.random() < 0.25) {
+        useGameStore.getState().spawnGoldenBooster();
+      }
+    }, 60000);
   },
 }));
 

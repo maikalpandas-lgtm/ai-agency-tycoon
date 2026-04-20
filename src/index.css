@@ -217,11 +217,33 @@ body {
   content: '';
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(circle at 30% 50%, rgba(139, 92, 246, 0.05) 0%, transparent 50%),
-    radial-gradient(circle at 70% 30%, rgba(6, 182, 212, 0.05) 0%, transparent 50%);
   pointer-events: none;
+  transition: all 1s ease;
 }
+
+/* Base garage workspace */
+.workspace-1 { background: radial-gradient(circle at 50% 50%, #4a4a4a 0%, #1a1a1a 100%); }
+.workspace-1::before { background: radial-gradient(circle at 30% 50%, rgba(255, 200, 100, 0.05) 0%, transparent 50%); }
+
+/* Coworking */
+.workspace-2 { background: var(--bg-secondary); }
+.workspace-2::before { background: radial-gradient(circle at 30% 50%, rgba(139, 92, 246, 0.05) 0%, transparent 50%), radial-gradient(circle at 70% 30%, rgba(6, 182, 212, 0.05) 0%, transparent 50%); }
+
+/* Office */
+.workspace-3 { background: linear-gradient(135deg, #18181b 0%, #27272a 100%); border-color: rgba(139, 92, 246, 0.3); }
+.workspace-3::before { background: radial-gradient(circle at 50% 0%, rgba(139, 92, 246, 0.1) 0%, transparent 50%); box-shadow: inset 0 10px 30px rgba(139,92,246,0.05); }
+
+/* Server Room */
+.workspace-4 { background: linear-gradient(180deg, #0f172a 0%, #020617 100%); border-color: rgba(6, 182, 212, 0.4); }
+.workspace-4::before { background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(6, 182, 212, 0.03) 2px, rgba(6, 182, 212, 0.03) 4px); }
+
+/* Mini DC */
+.workspace-5 { background: #000; border-color: var(--accent-primary); box-shadow: 0 0 40px rgba(139, 92, 246, 0.1) inset; }
+.workspace-5::before { background: radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.15) 0%, transparent 60%); }
+
+/* Mega DC / Matrix */
+.workspace-6 { background: #000; border-color: var(--accent-success); box-shadow: inset 0 0 50px rgba(16, 185, 129, 0.1); }
+.workspace-6::before { background: repeating-linear-gradient(90deg, rgba(16, 185, 129, 0.03) 0px, transparent 1px, transparent 20px), repeating-linear-gradient(0deg, rgba(16, 185, 129, 0.03) 0px, transparent 1px, transparent 20px); }
 
 .studio__tap-area {
   display: flex;
@@ -325,6 +347,26 @@ body {
 .equipment-card--empty:hover {
   opacity: 0.8;
   border-color: var(--accent-primary);
+}
+
+.equipment-card--holo {
+  background: linear-gradient(145deg, var(--bg-card), #2a1b4d);
+  position: relative;
+  border-color: rgba(139, 92, 246, 0.5);
+}
+
+.equipment-card--holo::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%; width: 50%; height: 100%;
+  background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);
+  transform: skewX(-20deg);
+  animation: holo-shimmer 3s infinite;
+}
+
+@keyframes holo-shimmer {
+  0% { left: -100%; }
+  100% { left: 200%; }
 }
 
 .equipment-card__icon {
@@ -704,11 +746,28 @@ body {
 }
 
 .video-item__status {
+  flex-shrink: 0;
   font-size: 10px;
+  font-weight: 600;
   padding: 2px 8px;
   border-radius: 10px;
-  font-weight: 600;
-  flex-shrink: 0;
+}
+
+.floating-dollar {
+  position: absolute;
+  right: 15px;
+  color: var(--accent-success);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 14px;
+  pointer-events: none;
+  animation: float-dollar 2s ease-out forwards;
+}
+
+@keyframes float-dollar {
+  0% { transform: translateY(0) scale(0.8); opacity: 0; }
+  20% { transform: translateY(-10px) scale(1.1); opacity: 1; }
+  100% { transform: translateY(-40px) scale(1); opacity: 0; }
 }
 
 .video-item__status--viral {
@@ -896,7 +955,18 @@ body {
   100% { transform: translateX(0); }
 }
 .app--shake {
-  animation: shake-screen 0.4s ease-in-out;
+  animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+.app--frenzy {
+  animation: frenzy-pulse 1s infinite alternate;
+  box-shadow: inset 0 0 50px rgba(250, 204, 21, 0.2);
+  border: 1px solid rgba(250, 204, 21, 0.5);
+}
+
+@keyframes frenzy-pulse {
+  0% { box-shadow: inset 0 0 20px rgba(250, 204, 21, 0.2); }
+  100% { box-shadow: inset 0 0 80px rgba(250, 204, 21, 0.4); border-color: rgba(250, 204, 21, 0.8); }
 }
 
 /* ===== STUDIO ORBS ===== */

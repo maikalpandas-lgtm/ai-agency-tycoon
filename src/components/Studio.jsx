@@ -25,11 +25,34 @@ export default function Studio() {
     tap(x, y);
   };
 
+  // Generate floating dollars for videos
+  const [floatingDollars, setFloatingDollars] = useState([]);
+  
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const activeGenVideos = videos.filter(v => v.status !== 'dead' && v.status !== 'ready');
+      if (activeGenVideos.length > 0 && Math.random() > 0.3) {
+        const randomVid = activeGenVideos[Math.floor(Math.random() * activeGenVideos.length)];
+        const platform = PLATFORMS[randomVid.platform];
+        if (!platform) return;
+        const income = Math.floor((randomVid.totalViews / 1000) * platform.incomePerKViews);
+        if (income > 0) {
+          const id = Math.random().toString(36).substr(2, 9);
+          setFloatingDollars(prev => [...prev, { id, videoId: randomVid.id, amount: income }]);
+          setTimeout(() => {
+            setFloatingDollars(prev => prev.filter(d => d.id !== id));
+          }, 2000);
+        }
+      }
+    }, 1500);
+    return () => clearInterval(interval);
+  }, [videos]);
+
   return (
     <div className="studio">
       {/* === Workspace Tap Area === */}
       <motion.div
-        className="studio__workspace"
+        className={`studio__workspace workspace-${level}`}
         onClick={handleTap}
         whileTap={{ scale: 0.98 }}
       >
@@ -122,7 +145,7 @@ export default function Studio() {
             return (
               <motion.div
                 key={idx}
-                className={`equipment-card ${!equip ? 'equipment-card--empty' : ''} ${isSelected ? 'equipment-card--selected' : ''} ${canMerge ? 'equipment-card--merge' : ''}`}
+                className={`equipment-card ${!equip ? 'equipment-card--empty' : ''} ${isSelected ? 'equipment-card--selected' : ''} ${canMerge ? 'equipment-card--merge' : ''} ${equip && equip.tier >= 5 ? 'equipment-card--holo' : ''}`}
                 onClick={() => equip && selectSlot(idx)}
                 whileTap={equip ? { scale: 0.9 } : {}}
                 layout
@@ -198,12 +221,19 @@ export default function Studio() {
                 <div className="video-item__info">
                   <div className="video-item__title">{video.title}</div>
                   <div className="video-item__views">
-                    👁 {formatNumber(video.totalViews)} просмотров •🎵
+                    👁 {formatNumber(video.totalViews)} просмотров • 🎵
                   </div>
                 </div>
                 <span className={`video-item__status video-item__status--${video.status}`}>
                   {video.status === 'viral' ? '🔥 Viral' : video.status === 'live' ? '📈 Растёт' : '💀'}
                 </span>
+                <AnimatePresence>
+                  {floatingDollars.filter(d => d.videoId === video.id).map(d => (
+                    <div key={d.id} className="floating-dollar">
+                      +${d.amount}
+                    </div>
+                  ))}
+                </AnimatePresence>
               </motion.div>
             );
           })}

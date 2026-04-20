@@ -24,6 +24,7 @@ export default function App() {
     offlineEarnings, dismissOffline,
     screenShake, achievementToast, achievements,
     levelUpModal, dismissLevelUp,
+    goldenBooster, frenzyMode, activateFrenzy,
     getComputePerSec, getCurrentLevel, getTotalFollowers,
     tickCompute, tickVideos, checkLevelUp, triggerRandomEvent,
     initGame,
@@ -138,7 +139,7 @@ export default function App() {
   };
 
   return (
-    <div className={`app ${screenShake ? 'app--shake' : ''}`}>
+    <div className={`app ${screenShake ? 'app--shake' : ''} ${frenzyMode ? 'app--frenzy' : ''}`}>
       {/* === TOP BAR === */}
       <div className="top-bar">
         <div>
@@ -247,6 +248,35 @@ export default function App() {
                 🎮 Продолжить
               </button>
             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* === GOLDEN BOOSTER === */}
+      <AnimatePresence>
+        {goldenBooster && (
+          <motion.div
+            key={goldenBooster.id}
+            initial={{ opacity: 0, scale: 0, x: '-50vw', y: `${goldenBooster.y}vh` }}
+            animate={{ 
+              opacity: 1, 
+              scale: [1, 1.2, 1],
+              x: '50vw',
+              y: `${goldenBooster.y + (Math.random() * 20 - 10)}vh`
+            }}
+            exit={{ opacity: 0, scale: 2 }}
+            transition={{ duration: 5, ease: 'linear' }}
+            onClick={activateFrenzy}
+            style={{
+              position: 'fixed',
+              left: '50%',
+              zIndex: 999,
+              fontSize: '48px',
+              cursor: 'pointer',
+              filter: 'drop-shadow(0 0 20px rgba(250, 204, 21, 0.8))'
+            }}
+          >
+            💾
           </motion.div>
         )}
       </AnimatePresence>
