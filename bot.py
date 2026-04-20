@@ -3,9 +3,9 @@ AI Agency Tycoon — Telegram Bot
 Простой бот с приветственным сообщением и кнопкой запуска Mini App.
 Запуск: python3 bot.py
 """
-import asyncio
 import json
 import urllib.request
+import time
 
 BOT_TOKEN = "8729385897:AAE0SelTDppgZn0NIaP8Y-WWjmIpQqHYyH4"
 WEBAPP_URL = "https://maikalpandas-lgtm.github.io/ai-agency-tycoon/"
@@ -24,15 +24,15 @@ def api_call(method, data=None):
     else:
         req = urllib.request.Request(url)
     
-    with urllib.request.urlopen(req) as resp:
+    with urllib.request.urlopen(req, timeout=35) as resp:
         return json.loads(resp.read().decode('utf-8'))
 
 
 def send_welcome(chat_id, first_name):
-    """Send welcome message with play button."""
+    """Send welcome message with fullscreen play button."""
     text = (
         f"👋 Привет, {first_name}!\n\n"
-        "🎮 Добро пожаловать в **AI Agency Tycoon**!\n\n"
+        "🎮 Добро пожаловать в *AI Agency Tycoon*!\n\n"
         "Ты начинаешь с потрёпанного ноутбука в гараже.\n"
         "Твоя цель — построить империю AI-контента и захватить "
         "TikTok, YouTube и Instagram! 🚀\n\n"
@@ -43,33 +43,31 @@ def send_welcome(chat_id, first_name):
         "🏆 Стань AI Mogul!\n\n"
         "Нажми кнопку ниже, чтобы начать! 👇"
     )
-    
-    keyboard = {
-        "inline_keyboard": [[
+
+    # ReplyKeyboardMarkup opens web_app in FULLSCREEN mode
+    reply_keyboard = {
+        "keyboard": [[
             {
                 "text": "🎮 Играть в AI Agency Tycoon",
                 "web_app": {"url": WEBAPP_URL}
             }
-        ], [
-            {
-                "text": "📢 Поделиться с друзьями",
-                "switch_inline_query": "Играй в AI Agency Tycoon! 🎮 Построй империю AI-контента!"
-            }
-        ]]
+        ]],
+        "resize_keyboard": True,
+        "is_persistent": True
     }
-    
+
     api_call("sendMessage", {
         "chat_id": chat_id,
         "text": text,
         "parse_mode": "Markdown",
-        "reply_markup": keyboard
+        "reply_markup": reply_keyboard
     })
 
 
 def send_help(chat_id):
     """Send help message."""
     text = (
-        "❓ **Как играть:**\n\n"
+        "❓ *Как играть:*\n\n"
         "1️⃣ Тапай по экрану, чтобы получать ⚡ Compute\n"
         "2️⃣ Покупай оборудование в Магазине 🛒\n"
         "3️⃣ Генерируй AI-видео 🎬\n"
@@ -78,21 +76,11 @@ def send_help(chat_id):
         "6️⃣ Прокачивай студию от Гаража до Mega Data Center 🚀\n\n"
         "🎯 Цель: набрать 100M подписчиков и стать AI Mogul! 🏆"
     )
-    
-    keyboard = {
-        "inline_keyboard": [[
-            {
-                "text": "🎮 Играть",
-                "web_app": {"url": WEBAPP_URL}
-            }
-        ]]
-    }
-    
+
     api_call("sendMessage", {
         "chat_id": chat_id,
         "text": text,
-        "parse_mode": "Markdown",
-        "reply_markup": keyboard
+        "parse_mode": "Markdown"
     })
 
 
@@ -100,32 +88,23 @@ def process_update(update):
     """Process a single update."""
     if "message" not in update:
         return
-    
+
     message = update["message"]
     chat_id = message["chat"]["id"]
     first_name = message["from"].get("first_name", "Игрок")
     text = message.get("text", "")
-    
+
     if text == "/start":
         send_welcome(chat_id, first_name)
     elif text == "/play":
         send_welcome(chat_id, first_name)
     elif text == "/help":
         send_help(chat_id)
-    else:
-        # For any other message, suggest playing
-        keyboard = {
-            "inline_keyboard": [[
-                {
-                    "text": "🎮 Играть",
-                    "web_app": {"url": WEBAPP_URL}
-                }
-            ]]
-        }
+    elif text and not text.startswith("/"):
+        # For any other message, just remind about the button
         api_call("sendMessage", {
             "chat_id": chat_id,
-            "text": "Нажми кнопку, чтобы играть! 👇",
-            "reply_markup": keyboard
+            "text": "Нажми кнопку «🎮 Играть» внизу чтобы открыть игру! 👇"
         })
 
 
@@ -134,16 +113,16 @@ def main():
     print("🤖 AI Agency Tycoon Bot запущен!")
     print(f"🎮 Web App URL: {WEBAPP_URL}")
     print("Ожидание сообщений...\n")
-    
+
     offset = 0
-    
+
     while True:
         try:
             result = api_call("getUpdates", {
                 "offset": offset,
                 "timeout": 30
             })
-            
+
             if result.get("ok") and result.get("result"):
                 for update in result["result"]:
                     offset = update["update_id"] + 1
@@ -154,13 +133,12 @@ def main():
                             print(f"📩 {user.get('first_name', '?')}: {update['message'].get('text', '[no text]')}")
                     except Exception as e:
                         print(f"❌ Ошибка обработки: {e}")
-        
+
         except KeyboardInterrupt:
             print("\n👋 Бот остановлен.")
             break
         except Exception as e:
             print(f"❌ Ошибка polling: {e}")
-            import time
             time.sleep(5)
 
 
