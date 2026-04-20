@@ -13,7 +13,7 @@ export default function Research() {
         <span className="section-subtitle">Технологии будущего</span>
       </div>
 
-      <div className="staff-grid">
+      <div style={{ marginTop: 12 }}>
         {RESEARCH_NODES.map(node => {
           const isUnlocked = unlockedResearch.includes(node.id);
           const canAfford = typeof compute === 'number' && typeof node.price === 'number' && compute >= node.price;
@@ -21,7 +21,7 @@ export default function Research() {
           return (
             <motion.div
               key={node.id}
-              className={`staff-card ${isUnlocked ? 'staff-card--hired' : ''} ${!isUnlocked && !canAfford ? 'staff-card--locked' : ''}`}
+              className={`shop-card ${isUnlocked ? 'shop-card--hired' : ''} ${!isUnlocked && !canAfford ? 'shop-card--locked' : ''}`}
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               whileTap={(!isUnlocked && canAfford) ? { scale: 0.95 } : {}}
@@ -29,22 +29,21 @@ export default function Research() {
                 if (!isUnlocked) buyResearch(node.id);
               }}
             >
-              <div className="staff-card__info">
-                <span className="staff-card__icon">{node.icon}</span>
-                <div style={{ flex: 1 }}>
-                  <div className="staff-card__name">{node.name}</div>
-                  <div className="staff-card__desc">{node.desc}</div>
-                </div>
+              <span className="shop-card__icon">{node.icon}</span>
+              <div className="shop-card__info" style={{ flex: 1 }}>
+                <div className="shop-card__name">{node.name}</div>
+                <div className="shop-card__desc">{node.desc}</div>
               </div>
               {!isUnlocked ? (
-                <button 
-                  className="staff-card__buy"
+                 <button 
+                  className="generate-btn"
+                  style={{ width: 'auto', padding: '6px 12px', fontSize: 13, background: 'var(--bg-secondary)', border: '1px solid var(--accent-primary)', color: 'var(--accent-primary)', boxShadow: 'none' }}
                   disabled={!canAfford}
                 >
                   Исследовать: {formatNumber(node.price)} ⚡
                 </button>
               ) : (
-                <div className="staff-card__hired-badge">Изучено ✔️</div>
+                <div className="shop-card__badge">✔️ Изучено</div>
               )}
             </motion.div>
           );
