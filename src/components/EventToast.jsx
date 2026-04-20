@@ -15,9 +15,9 @@ export default function EventToast() {
               ? 'event-toast--warning'
               : 'event-toast--positive'
           }`}
-          initial={{ y: -100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: -100, opacity: 0 }}
+          initial={{ x: '-50%', y: -100, opacity: 0 }}
+          animate={{ x: '-50%', y: 0, opacity: 1 }}
+          exit={{ x: '-50%', y: -100, opacity: 0 }}
           transition={{ type: 'spring', damping: 20 }}
         >
           <span className="event-toast__text">{activeEvent.text}</span>
