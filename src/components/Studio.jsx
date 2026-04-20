@@ -1,13 +1,13 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import useGameStore from '../store/gameStore';
-import { EQUIPMENT, NICHES, formatNumber } from '../data/gameData';
+import { EQUIPMENT, NICHES, formatNumber, formatDollars } from '../data/gameData';
 
 export default function Studio() {
   const {
-    compute, computePerTap, selectedNiche,
+    compute, computePerTap, selectedNiche, dollars,
     generatingVideo, generateProgress, equipmentSlots, selectedSlot,
     getComputePerSec, getAvailableNiches, getStaffMultipliers,
-    tap, startGenerateVideo, selectSlot,
+    tap, startGenerateVideo, selectSlot, upgradeEquipmentDirect,
     videos, tapParticles,
   } = useGameStore();
 
@@ -143,8 +143,37 @@ export default function Studio() {
           })}
         </div>
         {selectedSlot !== null && (
-          <div className="merge-hint">
-            💡 Выбрано! Тапни на такое же оборудование чтобы объединить ↑
+          <div className="selected-actions" style={{ marginTop: 12, padding: 12, background: 'rgba(139, 92, 246, 0.1)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(139, 92, 246, 0.3)' }}>
+            <div className="merge-hint" style={{ marginTop: 0, marginBottom: 8, fontSize: 13 }}>
+              💡 Тапни на такое же оборудование для бесплатного слияния (Merge) ↑
+            </div>
+            {(() => {
+               const eqId = equipmentSlots[selectedSlot];
+               if (eqId === null) return null;
+               const nextTier = EQUIPMENT.find(e => e.id === eqId + 1);
+               if (nextTier) {
+                 const upgradeCost = Math.floor(nextTier.price * mults.equipDiscount);
+                 const canAfford = dollars >= upgradeCost;
+                 return (
+                   <button 
+                     className="generate-btn"
+                     style={{ 
+                       opacity: canAfford ? 1 : 0.5, 
+                       padding: '12px', 
+                       fontSize: 14,
+                       background: canAfford ? 'var(--gradient-cta)' : 'var(--bg-secondary)',
+                       boxShadow: 'none'
+                     }}
+                     onClick={() => upgradeEquipmentDirect(selectedSlot)}
+                     disabled={!canAfford}
+                   >
+                     🚀 Апгрейд до {nextTier.name} ({formatDollars(upgradeCost)})
+                   </button>
+                 );
+               } else {
+                 return <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-muted)' }}>Максимальный уровень</div>;
+               }
+            })()}
           </div>
         )}
       </div>

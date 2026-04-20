@@ -282,6 +282,35 @@ const useGameStore = create((set, get) => ({
     haptic.light();
   },
 
+  // --- DIRECT UPGRADE ---
+  upgradeEquipmentDirect: (slotIndex) => {
+    const state = get();
+    const currentId = state.equipmentSlots[slotIndex];
+    if (!currentId) return false;
+    
+    const nextTier = EQUIPMENT.find(e => e.id === currentId + 1);
+    if (!nextTier) return false;
+    
+    const mults = state.getStaffMultipliers();
+    const upgradeCost = Math.floor(nextTier.price * mults.equipDiscount);
+    
+    if (state.dollars < upgradeCost) return false;
+    
+    const newSlots = [...state.equipmentSlots];
+    newSlots[slotIndex] = nextTier.id;
+    
+    set({
+      dollars: state.dollars - upgradeCost,
+      equipmentSlots: newSlots,
+      screenShake: true,
+      selectedSlot: null,
+    });
+    haptic.heavy();
+    setTimeout(() => set({ screenShake: false }), 300);
+    saveGame(get());
+    return true;
+  },
+
   // --- BUY EQUIPMENT ---
   buyEquipment: (equipId) => {
     const state = get();
