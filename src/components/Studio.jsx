@@ -1,185 +1,185 @@
-import { useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import useGameStore from '../store/gameStore';
 import { EQUIPMENT, NICHES, formatNumber } from '../data/gameData';
 
 export default function Studio() {
   const {
-    compute, computePerTap, generatingVideo, generateProgress,
-    selectedNiche, equipmentSlots, tapParticles, videos,
-    tap, startGenerateVideo, getComputePerSec, getAvailableNiches,
+    compute, computePerTap, selectedNiche,
+    generatingVideo, generateProgress, equipmentSlots, selectedSlot,
+    getComputePerSec, getAvailableNiches, getStaffMultipliers,
+    tap, startGenerateVideo, selectSlot,
+    videos, tapParticles,
   } = useGameStore();
 
-  const workspaceRef = useRef(null);
   const cps = getComputePerSec();
+  const mults = getStaffMultipliers();
+  const effectiveTap = computePerTap + mults.tapBonus;
   const niches = getAvailableNiches();
+  const liveVideos = videos.filter(v => v.status !== 'dead' && v.status !== 'ready');
   const currentNiche = NICHES.find(n => n.id === selectedNiche);
-  const canGenerate = !generatingVideo && compute >= (currentNiche?.computeCost || 10);
 
-  const handleTap = useCallback((e) => {
-    const rect = workspaceRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const x = e.clientX ? e.clientX - rect.left : e.touches?.[0]?.clientX - rect.left || rect.width / 2;
-    const y = e.clientY ? e.clientY - rect.top : e.touches?.[0]?.clientY - rect.top || rect.height / 2;
+  const handleTap = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
     tap(x, y);
-  }, [tap]);
-
-  const liveVideos = videos.filter(v => v.status === 'live' || v.status === 'viral').slice(0, 5);
+  };
 
   return (
     <div className="studio">
-      {/* === WORKSPACE TAP AREA === */}
-      <div
-        ref={workspaceRef}
+      {/* === Workspace Tap Area === */}
+      <motion.div
         className="studio__workspace"
         onClick={handleTap}
-        onTouchStart={handleTap}
+        whileTap={{ scale: 0.98 }}
       >
+        {/* Animated background particles */}
+        <div className="studio__particles-bg">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className={`studio__orb studio__orb--${i + 1}`} />
+          ))}
+        </div>
+
         <div className="studio__tap-area">
-          <div className="studio__compute-display">
+          <motion.div
+            className="studio__compute-display"
+            key={compute}
+            initial={{ scale: 1.05 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 0.15 }}
+          >
             {formatNumber(compute)} ⚡
-          </div>
+          </motion.div>
           <div className="studio__compute-rate">
-            +{formatNumber(cps)}/сек пассивно • +{computePerTap}/тап
+            +{cps}/сек пассивно • +{effectiveTap}/тап
           </div>
           <div className="studio__tap-hint">
             👆 Тапай чтобы майнить Compute
           </div>
         </div>
 
-        {/* Tap Particles */}
+        {/* Tap particles */}
         <AnimatePresence>
           {tapParticles.map(p => (
             <motion.div
               key={p.id}
               className="tap-particle"
-              initial={{ x: p.x - 20, y: p.y - 10, opacity: 1, scale: 1 }}
-              animate={{ y: p.y - 70, opacity: 0, scale: 0.7 }}
+              initial={{ opacity: 1, y: 0, x: p.x - 20, top: p.y }}
+              animate={{ opacity: 0, y: -60 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.5, ease: 'easeOut' }}
-              style={{ position: 'absolute' }}
+              transition={{ duration: 0.5 }}
+              style={{ position: 'absolute', left: p.x - 20, top: p.y }}
             >
               {p.value}
             </motion.div>
           ))}
         </AnimatePresence>
-      </div>
+      </motion.div>
 
-      {/* === NICHE SELECTOR === */}
-      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
-        {niches.map(niche => (
+      {/* === Niche Selector === */}
+      <div className="niche-selector">
+        {niches.map(n => (
           <button
-            key={niche.id}
-            onClick={() => useGameStore.setState({ selectedNiche: niche.id })}
-            style={{
-              padding: '6px 12px',
-              borderRadius: 20,
-              border: `1px solid ${selectedNiche === niche.id ? '#8b5cf6' : '#27272a'}`,
-              background: selectedNiche === niche.id ? 'rgba(139,92,246,0.15)' : '#1c1c22',
-              color: selectedNiche === niche.id ? '#8b5cf6' : '#a1a1aa',
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-              fontFamily: 'var(--font-sans)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-            }}
+            key={n.id}
+            className={`niche-pill ${selectedNiche === n.id ? 'niche-pill--active' : ''}`}
+            onClick={() => useGameStore.setState({ selectedNiche: n.id })}
           >
-            {niche.icon} {niche.name}
+            {n.icon} {n.name}
           </button>
         ))}
       </div>
 
-      {/* === GENERATE BUTTON === */}
-      <button
+      {/* === Generate Button === */}
+      <motion.button
         className="generate-btn"
-        disabled={!canGenerate}
         onClick={() => startGenerateVideo(selectedNiche)}
+        disabled={generatingVideo || compute < (currentNiche?.computeCost || 10)}
+        whileTap={{ scale: 0.97 }}
       >
         {generatingVideo && (
           <div className="generate-btn__progress" style={{ width: `${generateProgress}%` }} />
         )}
-        <span style={{ position: 'relative', zIndex: 1 }}>
-          {generatingVideo
-            ? `⏳ Генерация... ${Math.round(generateProgress)}%`
-            : `🎬 Генерировать видео (${currentNiche?.computeCost || 0}⚡)`
-          }
-        </span>
-      </button>
+        {generatingVideo
+          ? `⏳ Генерация ${Math.floor(generateProgress)}%`
+          : `🎬 Генерировать видео (${currentNiche?.computeCost || 10}⚡)`
+        }
+      </motion.button>
 
-      {/* === EQUIPMENT GRID === */}
+      {/* === Equipment Grid === */}
       <div className="equipment-section">
         <div className="section-header">
           <span className="section-title">⚡ Оборудование</span>
-          <span className="section-subtitle">{equipmentSlots.filter(s => s !== null).length}/{equipmentSlots.length} слотов</span>
+          <span className="section-subtitle">{equipmentSlots.filter(e => e !== null).length}/{equipmentSlots.length} слотов</span>
         </div>
         <div className="equipment-grid">
           {equipmentSlots.map((eqId, idx) => {
-            const eq = eqId ? EQUIPMENT.find(e => e.id === eqId) : null;
+            const equip = EQUIPMENT.find(e => e.id === eqId);
+            const isSelected = selectedSlot === idx;
+            const canMerge = selectedSlot !== null && selectedSlot !== idx && eqId !== null 
+              && equipmentSlots[selectedSlot] === eqId
+              && EQUIPMENT.find(e => e.id === eqId + 1);
+
             return (
               <motion.div
                 key={idx}
-                className={`equipment-card ${!eq ? 'equipment-card--empty' : ''}`}
-                whileTap={{ scale: 0.95 }}
+                className={`equipment-card ${!equip ? 'equipment-card--empty' : ''} ${isSelected ? 'equipment-card--selected' : ''} ${canMerge ? 'equipment-card--merge' : ''}`}
+                onClick={() => equip && selectSlot(idx)}
+                whileTap={equip ? { scale: 0.9 } : {}}
                 layout
               >
-                {eq ? (
+                {equip ? (
                   <>
-                    <span className="equipment-card__tier">T{eq.tier}</span>
-                    <span className="equipment-card__icon">{eq.icon}</span>
-                    <span className="equipment-card__name">{eq.name}</span>
-                    <span className="equipment-card__compute">+{eq.computePerSec}/с</span>
+                    <span className="equipment-card__tier">T{equip.tier}</span>
+                    <span className="equipment-card__icon">{equip.icon}</span>
+                    <span className="equipment-card__name">{equip.name}</span>
+                    <span className="equipment-card__compute">+{equip.computePerSec}/с</span>
+                    {canMerge && <span className="equipment-card__merge-badge">🔄</span>}
                   </>
                 ) : (
-                  <span className="equipment-card__icon" style={{ opacity: 0.3 }}>+</span>
+                  <span style={{ fontSize: 20, color: 'var(--text-muted)' }}>+</span>
                 )}
               </motion.div>
             );
           })}
         </div>
+        {selectedSlot !== null && (
+          <div className="merge-hint">
+            💡 Выбрано! Тапни на такое же оборудование чтобы объединить ↑
+          </div>
+        )}
       </div>
 
-      {/* === LIVE VIDEOS ===  */}
+      {/* === Active Videos === */}
       {liveVideos.length > 0 && (
-        <div className="equipment-section">
+        <div className="video-feed">
           <div className="section-header">
-            <span className="section-title">📱 Активные видео</span>
+            <span className="section-title">📺 Активные видео</span>
             <span className="section-subtitle">{liveVideos.length} live</span>
           </div>
-          <div className="video-feed">
-            {liveVideos.map(video => (
+          {liveVideos.slice(0, 5).map(video => {
+            const niche = NICHES.find(n => n.id === video.nicheId);
+            return (
               <motion.div
                 key={video.id}
                 className="video-item"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
               >
-                <span className="video-item__icon">
-                  {NICHES.find(n => n.id === video.nicheId)?.icon || '🎬'}
-                </span>
+                <span className="video-item__icon">{niche?.icon}</span>
                 <div className="video-item__info">
                   <div className="video-item__title">{video.title}</div>
                   <div className="video-item__views">
-                    👁 {formatNumber(video.totalViews)} просмотров • 
-                    {Object.keys(video.platforms).map(p => PLATFORMS_ICONS[p]).join(' ')}
+                    👁 {formatNumber(video.totalViews)} просмотров •🎵
                   </div>
                 </div>
                 <span className={`video-item__status video-item__status--${video.status}`}>
-                  {video.status === 'viral' ? '🔥 Вирал' : video.status === 'live' ? '📈 Растёт' : '💤'}
+                  {video.status === 'viral' ? '🔥 Viral' : video.status === 'live' ? '📈 Растёт' : '💀'}
                 </span>
               </motion.div>
-            ))}
-          </div>
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
-
-const PLATFORMS_ICONS = {
-  tiktok: '🎵',
-  youtube: '▶️',
-  instagram: '📸',
-};

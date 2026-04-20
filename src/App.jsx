@@ -1,7 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import useGameStore from './store/gameStore';
-import { formatNumber, formatDollars } from './data/gameData';
+import { formatNumber, formatDollars, ACHIEVEMENTS } from './data/gameData';
 import Studio from './components/Studio';
 import Shop from './components/Shop';
 import Channels from './components/Channels';
@@ -22,6 +22,7 @@ export default function App() {
     activeTab, setActiveTab,
     compute, dollars, totalFollowers, level,
     offlineEarnings, dismissOffline,
+    screenShake, achievementToast, achievements,
     getComputePerSec, getCurrentLevel, getTotalFollowers,
     tickCompute, tickVideos, checkLevelUp, triggerRandomEvent,
     initGame,
@@ -34,7 +35,6 @@ export default function App() {
   // Initialize game on first load
   useEffect(() => {
     initGame();
-    // Telegram Web App integration
     if (window.Telegram?.WebApp) {
       const tg = window.Telegram.WebApp;
       tg.ready();
@@ -42,55 +42,40 @@ export default function App() {
       tg.setHeaderColor('#09090b');
       tg.setBackgroundColor('#09090b');
       tg.isClosingConfirmationEnabled = true;
-
-      // Disable swipe-to-close so tapping doesn't dismiss the app
       if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
 
-      // Listen for safe area changes and apply CSS variable
-      const applySafeArea = () => {
-        const safeTop = tg.safeAreaInset?.top || 0;
-        const contentTop = tg.contentSafeAreaInset?.top || 0;
-        const totalTop = safeTop + contentTop;
-        document.documentElement.style.setProperty('--tg-safe-top', `${totalTop}px`);
-      };
-
-      // Request fullscreen after a short delay (needs expand first)
       setTimeout(() => {
-        if (tg.requestFullscreen) {
-          tg.requestFullscreen();
-        }
-        // Apply safe area after fullscreen change
+        if (tg.requestFullscreen) tg.requestFullscreen();
+        const applySafeArea = () => {
+          const safeTop = tg.safeAreaInset?.top || 0;
+          const contentTop = tg.contentSafeAreaInset?.top || 0;
+          document.documentElement.style.setProperty('--tg-safe-top', `${safeTop + contentTop}px`);
+        };
         setTimeout(applySafeArea, 300);
+        applySafeArea();
+        tg.onEvent('safeAreaChanged', applySafeArea);
+        tg.onEvent('contentSafeAreaChanged', applySafeArea);
+        tg.onEvent('fullscreenChanged', applySafeArea);
       }, 500);
-
-      applySafeArea();
-      tg.onEvent('safeAreaChanged', applySafeArea);
-      tg.onEvent('contentSafeAreaChanged', applySafeArea);
-      tg.onEvent('fullscreenChanged', applySafeArea);
     }
   }, []);
 
-  // Game tick: passive compute every second
+  // Game tick
   useEffect(() => {
-    const interval = setInterval(() => {
-      tickCompute();
-    }, 1000);
+    const interval = setInterval(() => tickCompute(), 1000);
     return () => clearInterval(interval);
   }, []);
 
-  // Video views tick: every 5 seconds
+  // Video views tick
   useEffect(() => {
-    const interval = setInterval(() => {
-      tickVideos();
-      checkLevelUp();
-    }, 5000);
+    const interval = setInterval(() => { tickVideos(); checkLevelUp(); }, 5000);
     return () => clearInterval(interval);
   }, []);
 
-  // Random events: every 60-120 seconds
+  // Random events
   useEffect(() => {
     const scheduleEvent = () => {
-      const delay = 60000 + Math.random() * 60000; // 60-120s
+      const delay = 60000 + Math.random() * 60000;
       return setTimeout(() => {
         triggerRandomEvent();
         timerRef.current = scheduleEvent();
@@ -113,13 +98,38 @@ export default function App() {
         </div>
       );
       case 'settings': return (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60vh', gap: 12 }}>
-          <span style={{ fontSize: 48 }}>⚙️</span>
-          <span style={{ fontSize: 16, fontWeight: 600 }}>Настройки</span>
-          <span style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center' }}>
-            Уровень: {level} — {currentLevel.name} {currentLevel.icon}<br/>
-            Цель: {formatNumber(currentLevel.goalFollowers)} подписчиков
-          </span>
+        <div className="settings-screen">
+          {/* Game Info */}
+          <div className="settings-info">
+            <div style={{ fontSize: 48 }}>{currentLevel.icon}</div>
+            <div className="settings-info__name">Уровень {level} — {currentLevel.name}</div>
+            <div className="settings-info__goal">Цель: {formatNumber(currentLevel.goalFollowers)} подписчиков</div>
+          </div>
+
+          {/* Achievements */}
+          <div className="section-header" style={{ marginTop: 16 }}>
+            <span className="section-title">🏆 Достижения</span>
+            <span className="section-subtitle">{achievements.length}/{ACHIEVEMENTS.length}</span>
+          </div>
+          <div className="achievements-grid">
+            {ACHIEVEMENTS.map(ach => {
+              const unlocked = achievements.includes(ach.id);
+              return (
+                <div key={ach.id} className={`achievement-card ${unlocked ? 'achievement-card--unlocked' : ''}`}>
+                  <span className="achievement-card__icon">{unlocked ? ach.icon : '🔒'}</span>
+                  <div className="achievement-card__info">
+                    <div className="achievement-card__name">{ach.name}</div>
+                    <div className="achievement-card__desc">{ach.desc}</div>
+                  </div>
+                  {unlocked && (
+                    <span className="achievement-card__reward">
+                      +{ach.reward}{ach.rewardType === 'dollars' ? '$' : '⚡'}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       );
       default: return <Studio />;
@@ -127,7 +137,7 @@ export default function App() {
   };
 
   return (
-    <div className="app">
+    <div className={`app ${screenShake ? 'app--shake' : ''}`}>
       {/* === TOP BAR === */}
       <div className="top-bar">
         <div>
@@ -174,6 +184,28 @@ export default function App() {
       {/* === MODALS & OVERLAYS === */}
       <PublishModal />
       <EventToast />
+
+      {/* === ACHIEVEMENT TOAST === */}
+      <AnimatePresence>
+        {achievementToast && (
+          <motion.div
+            className="achievement-toast"
+            initial={{ y: -80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -80, opacity: 0 }}
+            transition={{ type: 'spring', dampen: 20 }}
+          >
+            <span style={{ fontSize: 28 }}>{achievementToast.icon}</span>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 14 }}>🏆 {achievementToast.name}</div>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{achievementToast.desc}</div>
+              <div style={{ fontSize: 11, color: 'var(--accent-success)', marginTop: 2, fontFamily: 'var(--font-mono)' }}>
+                +{achievementToast.reward}{achievementToast.rewardType === 'dollars' ? '$' : '⚡'}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* === OFFLINE EARNINGS MODAL === */}
       <AnimatePresence>

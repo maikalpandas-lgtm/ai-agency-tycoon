@@ -149,3 +149,30 @@ export function randomBetween(min, max) {
 export function randomChoice(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
+
+// ===== STAFF =====
+export const STAFF = [
+  { id: 1, name: 'Стажёр', icon: '🧑‍💻', desc: 'Тапает за тебя (+1/сек авто-тап)', price: 100, effect: { autoTap: 1 }, unlock: 0 },
+  { id: 2, name: 'Контент-менеджер', icon: '📋', desc: 'Авто-генерация видео каждые 60 сек', price: 500, effect: { autoGenerate: true, interval: 60 }, unlock: 1000 },
+  { id: 3, name: 'SMM-менеджер', icon: '📱', desc: '+50% конверсия подписчиков', price: 2000, effect: { followerMultiplier: 1.5 }, unlock: 5000 },
+  { id: 4, name: 'Монтажёр', icon: '🎞️', desc: '+100% просмотров за качество', price: 5000, effect: { viewMultiplier: 2.0 }, unlock: 10000 },
+  { id: 5, name: 'PR-директор', icon: '📣', desc: '+200% доход от рекламы', price: 20000, effect: { incomeMultiplier: 3.0 }, unlock: 50000 },
+  { id: 6, name: 'CTO', icon: '🧠', desc: '+5 Compute/тап, -50% стоимость оборуд.', price: 100000, effect: { tapBonus: 5, equipDiscount: 0.5 }, unlock: 200000 },
+];
+
+// ===== ACHIEVEMENTS =====
+export const ACHIEVEMENTS = [
+  { id: 'first_video', name: 'Первое видео', icon: '🎬', desc: 'Сгенерируй первое видео', reward: 50, rewardType: 'dollars' },
+  { id: 'first_publish', name: 'Публикатор', icon: '📤', desc: 'Опубликуй первое видео', reward: 100, rewardType: 'dollars' },
+  { id: 'first_1k_views', name: '1K просмотров', icon: '👀', desc: 'Набери 1,000 просмотров на одном видео', reward: 200, rewardType: 'dollars' },
+  { id: 'first_100_followers', name: 'Первая сотня', icon: '👥', desc: 'Набери 100 подписчиков', reward: 100, rewardType: 'dollars' },
+  { id: 'first_1k_followers', name: 'Тысячник', icon: '🎯', desc: 'Набери 1,000 подписчиков', reward: 500, rewardType: 'dollars' },
+  { id: 'first_dollar', name: 'Первый доллар', icon: '💵', desc: 'Заработай первый $1', reward: 100, rewardType: 'compute' },
+  { id: 'merge_first', name: 'Алхимик', icon: '🔄', desc: 'Объедини два прибора', reward: 200, rewardType: 'dollars' },
+  { id: 'hire_first', name: 'Босс', icon: '🤝', desc: 'Найми первого сотрудника', reward: 200, rewardType: 'compute' },
+  { id: 'viral_video', name: 'Вирусняк', icon: '🌟', desc: 'Получи вирусное видео', reward: 1000, rewardType: 'dollars' },
+  { id: 'workspace_upgrade', name: 'Расширение', icon: '🏢', desc: 'Улучши рабочее место', reward: 300, rewardType: 'dollars' },
+  { id: 'ten_videos', name: 'Конвейер', icon: '🏭', desc: 'Опубликуй 10 видео', reward: 500, rewardType: 'dollars' },
+  { id: 'second_platform', name: 'Мультиплатформа', icon: '📱', desc: 'Открой второй канал', reward: 1000, rewardType: 'dollars' },
+];
+

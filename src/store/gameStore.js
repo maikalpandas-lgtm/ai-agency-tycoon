@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { EQUIPMENT, WORKSPACES, NICHES, PLATFORMS, VIDEO_TITLES, GAME_LEVELS, EVENTS, randomBetween, randomChoice } from '../data/gameData';
+import { EQUIPMENT, WORKSPACES, NICHES, PLATFORMS, VIDEO_TITLES, GAME_LEVELS, EVENTS, STAFF, ACHIEVEMENTS, randomBetween, randomChoice } from '../data/gameData';
 
 // ===== HAPTIC FEEDBACK =====
 const haptic = {
@@ -28,12 +28,13 @@ function saveGame(state) {
       videos: state.videos.filter(v => v.status !== 'dead').slice(0, 20),
       level: state.level,
       selectedNiche: state.selectedNiche,
+      staff: state.staff,
+      achievements: state.achievements,
+      totalVideosPublished: state.totalVideosPublished,
       savedAt: Date.now(),
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
-  } catch(e) {
-    console.warn('Save failed:', e);
-  }
+  } catch(e) {}
 }
 
 function loadGame() {
@@ -41,8 +42,7 @@ function loadGame() {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw);
-    // Calculate offline earnings
-    const offlineSeconds = Math.min((Date.now() - data.savedAt) / 1000, 3600 * 8); // max 8h
+    const offlineSeconds = Math.min((Date.now() - data.savedAt) / 1000, 3600 * 8);
     let offlineCompute = 0;
     if (data.equipmentSlots) {
       const cps = data.equipmentSlots.reduce((total, eq) => {
@@ -54,7 +54,6 @@ function loadGame() {
     }
     return { ...data, offlineCompute, offlineSeconds };
   } catch(e) {
-    console.warn('Load failed:', e);
     return null;
   }
 }
@@ -63,19 +62,28 @@ function loadGame() {
 const useGameStore = create((set, get) => ({
   // ===== CORE STATE =====
   compute: 0,
-  dollars: 10,  // 🔥 START WITH $10 so player can buy first upgrade faster
+  dollars: 10,
   totalFollowers: 0,
   computePerTap: 1,
   
   // ===== WORKSPACE =====
   workspaceLevel: 1,
   equipmentSlots: Array(2).fill(null),
+  selectedSlot: null, // for merge-by-tap
+  
+  // ===== STAFF =====
+  staff: [], // hired staff ids
+  
+  // ===== ACHIEVEMENTS =====
+  achievements: [], // unlocked achievement ids
+  achievementToast: null, // currently showing achievement
   
   // ===== CHANNELS =====
   channels: [],
   
   // ===== VIDEOS =====
   videos: [],
+  totalVideosPublished: 0,
   
   // ===== GAME PROGRESS =====
   level: 1,
@@ -86,6 +94,7 @@ const useGameStore = create((set, get) => ({
   // ===== EVENTS =====
   activeEvent: null,
   offlineEarnings: null,
+  screenShake: false,
   
   // ===== UI =====
   activeTab: 'studio',
@@ -96,11 +105,14 @@ const useGameStore = create((set, get) => ({
   // ===== COMPUTED =====
   getComputePerSec: () => {
     const state = get();
-    return state.equipmentSlots.reduce((total, eq) => {
+    let cps = state.equipmentSlots.reduce((total, eq) => {
       if (!eq) return total;
       const data = EQUIPMENT.find(e => e.id === eq);
       return total + (data?.computePerSec || 0);
     }, 0);
+    // Staff: стажёр adds autoTap
+    if (state.staff.includes(1)) cps += 1;
+    return cps;
   },
 
   getTotalFollowers: () => {
@@ -136,12 +148,69 @@ const useGameStore = create((set, get) => ({
     return get().getTotalFollowers() >= platform.unlockFollowers;
   },
 
+  getStaffMultipliers: () => {
+    const state = get();
+    let followerMult = 1;
+    let viewMult = 1;
+    let incomeMult = 1;
+    let tapBonus = 0;
+    let equipDiscount = 1;
+    state.staff.forEach(sid => {
+      const s = STAFF.find(st => st.id === sid);
+      if (!s) return;
+      if (s.effect.followerMultiplier) followerMult *= s.effect.followerMultiplier;
+      if (s.effect.viewMultiplier) viewMult *= s.effect.viewMultiplier;
+      if (s.effect.incomeMultiplier) incomeMult *= s.effect.incomeMultiplier;
+      if (s.effect.tapBonus) tapBonus += s.effect.tapBonus;
+      if (s.effect.equipDiscount) equipDiscount *= s.effect.equipDiscount;
+    });
+    return { followerMult, viewMult, incomeMult, tapBonus, equipDiscount };
+  },
+
+  // ===== ACHIEVEMENTS =====
+  unlockAchievement: (achievementId) => {
+    const state = get();
+    if (state.achievements.includes(achievementId)) return;
+    
+    const ach = ACHIEVEMENTS.find(a => a.id === achievementId);
+    if (!ach) return;
+
+    const updates = { achievements: [...state.achievements, achievementId] };
+    if (ach.rewardType === 'dollars') updates.dollars = state.dollars + ach.reward;
+    if (ach.rewardType === 'compute') updates.compute = state.compute + ach.reward;
+    
+    set({ ...updates, achievementToast: ach });
+    haptic.success();
+    
+    setTimeout(() => set({ achievementToast: null }), 4000);
+    saveGame(get());
+  },
+
+  checkAchievements: () => {
+    const state = get();
+    const unlock = state.unlockAchievement;
+    const totalFollowers = state.getTotalFollowers();
+    
+    if (state.videos.length > 0 || state.totalVideosPublished > 0) unlock('first_video');
+    if (state.totalVideosPublished > 0) unlock('first_publish');
+    if (state.totalVideosPublished >= 10) unlock('ten_videos');
+    if (state.videos.some(v => v.totalViews >= 1000)) unlock('first_1k_views');
+    if (state.videos.some(v => v.status === 'viral')) unlock('viral_video');
+    if (totalFollowers >= 100) unlock('first_100_followers');
+    if (totalFollowers >= 1000) unlock('first_1k_followers');
+    if (state.dollars >= 1) unlock('first_dollar');
+    if (state.staff.length > 0) unlock('hire_first');
+    if (state.workspaceLevel >= 2) unlock('workspace_upgrade');
+    if (state.channels.length >= 2) unlock('second_platform');
+  },
+
   // ===== ACTIONS =====
   
   // --- TAP ---
   tap: (x, y) => {
     const state = get();
-    const amount = state.computePerTap;
+    const mults = state.getStaffMultipliers();
+    const amount = state.computePerTap + mults.tapBonus;
     haptic.tap();
     const particle = {
       id: Date.now() + Math.random(),
@@ -157,7 +226,7 @@ const useGameStore = create((set, get) => ({
     }, 600);
   },
 
-  // --- PASSIVE COMPUTE (called every second) ---
+  // --- PASSIVE COMPUTE ---
   tickCompute: () => {
     const cps = get().getComputePerSec();
     if (cps > 0) {
@@ -165,11 +234,60 @@ const useGameStore = create((set, get) => ({
     }
   },
 
+  // --- SELECT EQUIPMENT SLOT (for merge) ---
+  selectSlot: (slotIndex) => {
+    const state = get();
+    const currentItem = state.equipmentSlots[slotIndex];
+    
+    if (!currentItem) {
+      set({ selectedSlot: null });
+      return;
+    }
+    
+    // If no slot selected, select this one
+    if (state.selectedSlot === null) {
+      set({ selectedSlot: slotIndex });
+      haptic.light();
+      return;
+    }
+    
+    // If same slot, deselect
+    if (state.selectedSlot === slotIndex) {
+      set({ selectedSlot: null });
+      return;
+    }
+    
+    // Try to merge
+    const selectedItem = state.equipmentSlots[state.selectedSlot];
+    if (selectedItem === currentItem) {
+      const nextTier = EQUIPMENT.find(e => e.id === currentItem + 1);
+      if (nextTier) {
+        const newSlots = [...state.equipmentSlots];
+        newSlots[state.selectedSlot] = nextTier.id;
+        newSlots[slotIndex] = null;
+        set({ equipmentSlots: newSlots, selectedSlot: null, screenShake: true });
+        haptic.heavy();
+        // Achievement
+        state.unlockAchievement('merge_first');
+        setTimeout(() => set({ screenShake: false }), 300);
+        saveGame(get());
+        return;
+      }
+    }
+    
+    // Different items — just select the new one
+    set({ selectedSlot: slotIndex });
+    haptic.light();
+  },
+
   // --- BUY EQUIPMENT ---
   buyEquipment: (equipId) => {
     const state = get();
     const equip = EQUIPMENT.find(e => e.id === equipId);
-    if (!equip || state.dollars < equip.price) return false;
+    const mults = state.getStaffMultipliers();
+    const price = Math.floor(equip.price * mults.equipDiscount);
+    
+    if (!equip || state.dollars < price) return false;
     
     const emptySlot = state.equipmentSlots.indexOf(null);
     if (emptySlot === -1) return false;
@@ -178,7 +296,7 @@ const useGameStore = create((set, get) => ({
     newSlots[emptySlot] = equipId;
     
     set({
-      dollars: state.dollars - equip.price,
+      dollars: state.dollars - price,
       equipmentSlots: newSlots,
     });
     haptic.success();
@@ -186,7 +304,7 @@ const useGameStore = create((set, get) => ({
     return true;
   },
 
-  // --- MERGE EQUIPMENT ---
+  // --- MERGE EQUIPMENT (legacy) ---
   mergeEquipment: (slotA, slotB) => {
     const state = get();
     const idA = state.equipmentSlots[slotA];
@@ -221,7 +339,27 @@ const useGameStore = create((set, get) => ({
       dollars: state.dollars - next.unlockPrice,
       equipmentSlots: newSlots,
     });
+    state.unlockAchievement('workspace_upgrade');
     haptic.heavy();
+    saveGame(get());
+    return true;
+  },
+
+  // --- HIRE STAFF ---
+  hireStaff: (staffId) => {
+    const state = get();
+    if (state.staff.includes(staffId)) return false;
+    
+    const staffData = STAFF.find(s => s.id === staffId);
+    if (!staffData || state.dollars < staffData.price) return false;
+    if (state.getTotalFollowers() < staffData.unlock) return false;
+
+    set({
+      staff: [...state.staff, staffId],
+      dollars: state.dollars - staffData.price,
+    });
+    state.unlockAchievement('hire_first');
+    haptic.success();
     saveGame(get());
     return true;
   },
@@ -263,6 +401,7 @@ const useGameStore = create((set, get) => ({
           pendingVideo: video,
           showPublishModal: true,
         });
+        state.unlockAchievement('first_video');
         haptic.success();
       } else {
         set({ generateProgress: progress });
@@ -283,26 +422,25 @@ const useGameStore = create((set, get) => ({
       platforms[pid] = { views: 0, wave: 0, lastWaveTime: Date.now() };
     });
 
-    const publishedVideo = {
-      ...video,
-      platforms,
-      status: 'live',
-    };
+    const publishedVideo = { ...video, platforms, status: 'live' };
 
     set(s => ({
       videos: [publishedVideo, ...s.videos].slice(0, 50),
       pendingVideo: null,
       showPublishModal: false,
+      totalVideosPublished: s.totalVideosPublished + 1,
     }));
+    state.unlockAchievement('first_publish');
     haptic.success();
     saveGame(get());
   },
 
-  // --- TICK VIDEOS (called every 5 seconds) ---
+  // --- TICK VIDEOS ---
   tickVideos: () => {
     const state = get();
     if (state.videos.length === 0) return;
 
+    const mults = state.getStaffMultipliers();
     let dollarsEarned = 0;
 
     const updatedVideos = state.videos.map(video => {
@@ -316,28 +454,21 @@ const useGameStore = create((set, get) => ({
         const platform = PLATFORMS[pid];
         if (!platform) return;
 
-        const qualityMultiplier = 1 + (state.getComputePerSec() / 50); // 🔥 buffed quality bonus
-        
+        const qualityMultiplier = 1 + (state.getComputePerSec() / 50);
         const isViral = Math.random() < platform.viralChance;
         const waveMultiplier = isViral ? 10 : 1;
         
         const baseViews = randomBetween(niche.baseViews[0], niche.baseViews[1]);
-        // 🔥 BUFFED: /50 instead of /100 — faster view growth
         const newViews = Math.floor(
-          (baseViews / 50) * qualityMultiplier * platform.viewMultiplier * waveMultiplier * (1 + Math.random())
+          (baseViews / 50) * qualityMultiplier * platform.viewMultiplier * waveMultiplier * mults.viewMult * (1 + Math.random())
         );
 
-        updatedPlatforms[pid] = {
-          ...pdata,
-          views: pdata.views + newViews,
-        };
-
+        updatedPlatforms[pid] = { ...pdata, views: pdata.views + newViews };
         totalNewViews += newViews;
 
-        // 🔥 BUFFED: income starts at 1000 followers instead of 10000
         const channel = state.channels.find(c => c.platform === pid);
         if (channel && channel.followers >= 1000) {
-          dollarsEarned += (newViews / 1000) * platform.incomePerKViews * 5; // 🔥 x5 income multiplier
+          dollarsEarned += (newViews / 1000) * platform.incomePerKViews * 5 * mults.incomeMult;
         }
       });
 
@@ -348,7 +479,6 @@ const useGameStore = create((set, get) => ({
       return { ...video, platforms: updatedPlatforms, totalViews, status: newStatus };
     });
 
-    // Distribute followers to channels
     const updatedChannels = state.channels.map(ch => {
       const channelVideoViews = updatedVideos
         .filter(v => v.platforms[ch.platform])
@@ -359,33 +489,25 @@ const useGameStore = create((set, get) => ({
         .reduce((sum, v) => sum + (v.platforms[ch.platform]?.views || 0), 0);
       
       const newViews = channelVideoViews - prevViews;
-      // 🔥 BUFFED: 3% conversion instead of 1%
-      const newFollowers = Math.floor(newViews * 0.03);
+      const newFollowers = Math.floor(newViews * 0.03 * mults.followerMult);
       
       const platform = PLATFORMS[ch.platform];
       let income = 0;
       if (ch.followers >= 1000) {
-        income = (newViews / 1000) * platform.incomePerKViews * 30 * 5;
+        income = (newViews / 1000) * platform.incomePerKViews * 30 * 5 * mults.incomeMult;
       }
 
-      return {
-        ...ch,
-        followers: ch.followers + newFollowers,
-        totalViews: ch.totalViews + newViews,
-        income,
-      };
+      return { ...ch, followers: ch.followers + newFollowers, totalViews: ch.totalViews + newViews, income };
     });
 
-    const newDollars = state.dollars + dollarsEarned;
-    
     set({
       videos: updatedVideos,
       channels: updatedChannels,
-      dollars: newDollars,
+      dollars: state.dollars + dollarsEarned,
       totalFollowers: updatedChannels.reduce((s, c) => s + c.followers, 0),
     });
 
-    // 🔥 Auto-save every tick
+    state.checkAchievements();
     saveGame(get());
   },
 
@@ -412,6 +534,7 @@ const useGameStore = create((set, get) => ({
     };
 
     set(s => ({ channels: [...s.channels, channel] }));
+    if (get().channels.length >= 2) state.unlockAchievement('second_platform');
     haptic.success();
     saveGame(get());
     return true;
@@ -424,12 +547,10 @@ const useGameStore = create((set, get) => ({
     if (!currentLevel) return;
 
     const totalFollowers = state.getTotalFollowers();
-    const meetsFollowers = totalFollowers >= currentLevel.goalFollowers;
-    const meetsDollars = !currentLevel.goalDollars || state.dollars >= currentLevel.goalDollars;
-
-    if (meetsFollowers && meetsDollars && state.level < 10) {
-      set(s => ({ level: s.level + 1 }));
+    if (totalFollowers >= currentLevel.goalFollowers && state.level < 10) {
+      set(s => ({ level: s.level + 1, screenShake: true }));
       haptic.heavy();
+      setTimeout(() => set({ screenShake: false }), 500);
       saveGame(get());
       return true;
     }
@@ -448,12 +569,8 @@ const useGameStore = create((set, get) => ({
     set({ activeEvent: { ...event, startedAt: Date.now() } });
     isPositive ? haptic.success() : haptic.warning();
 
-    if (event.effect.addDollars) {
-      set(s => ({ dollars: s.dollars + event.effect.addDollars }));
-    }
-    if (event.effect.removeDollars) {
-      set(s => ({ dollars: Math.max(0, s.dollars - event.effect.removeDollars) }));
-    }
+    if (event.effect.addDollars) set(s => ({ dollars: s.dollars + event.effect.addDollars }));
+    if (event.effect.removeDollars) set(s => ({ dollars: Math.max(0, s.dollars - event.effect.removeDollars) }));
     if (event.effect.addFollowers) {
       set(s => {
         if (s.channels.length === 0) return {};
@@ -463,10 +580,7 @@ const useGameStore = create((set, get) => ({
       });
     }
 
-    const duration = event.duration || 5000;
-    setTimeout(() => {
-      set({ activeEvent: null });
-    }, Math.min(duration, 8000));
+    setTimeout(() => set({ activeEvent: null }), Math.min(event.duration || 5000, 8000));
   },
 
   // --- UI ---
@@ -478,7 +592,6 @@ const useGameStore = create((set, get) => ({
   initGame: () => {
     const saved = loadGame();
     if (saved) {
-      // Restore saved state
       set({
         compute: saved.compute + (saved.offlineCompute || 0),
         dollars: saved.dollars,
@@ -490,18 +603,19 @@ const useGameStore = create((set, get) => ({
         videos: saved.videos,
         level: saved.level,
         selectedNiche: saved.selectedNiche || 1,
+        staff: saved.staff || [],
+        achievements: saved.achievements || [],
+        totalVideosPublished: saved.totalVideosPublished || 0,
         offlineEarnings: saved.offlineCompute > 0 ? {
           compute: saved.offlineCompute,
           seconds: Math.floor(saved.offlineSeconds),
         } : null,
       });
-      console.log(`✅ Game loaded! +${saved.offlineCompute}⚡ offline earnings`);
     } else {
-      // New game: give starter equipment and channel
       const state = get();
       if (state.equipmentSlots[0] === null) {
         const slots = [...state.equipmentSlots];
-        slots[0] = 1; // starter laptop
+        slots[0] = 1;
         set({ equipmentSlots: slots });
       }
       if (state.channels.length === 0) {
