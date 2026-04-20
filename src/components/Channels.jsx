@@ -4,7 +4,7 @@ import useGameStore from '../store/gameStore';
 import { PLATFORMS, NICHES, formatNumber, formatDollars } from '../data/gameData';
 
 export default function Channels() {
-  const { channels, totalFollowers, createChannel, canUnlockPlatform } = useGameStore();
+  const { channels, videos, totalFollowers, createChannel, canUnlockPlatform } = useGameStore();
   const [showCreate, setShowCreate] = useState(false);
   const [createPlatform, setCreatePlatform] = useState(null);
 
