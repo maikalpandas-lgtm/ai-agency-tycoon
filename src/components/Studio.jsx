@@ -1,6 +1,7 @@
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import useGameStore from '../store/gameStore';
-import { EQUIPMENT, NICHES, formatNumber, formatDollars } from '../data/gameData';
+import { EQUIPMENT, NICHES, PLATFORMS, formatNumber, formatDollars } from '../data/gameData';
 
 export default function Studio() {
   const {
