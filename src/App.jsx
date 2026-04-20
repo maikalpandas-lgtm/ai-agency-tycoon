@@ -41,9 +41,21 @@ export default function App() {
       tg.setHeaderColor('#09090b');
       tg.setBackgroundColor('#09090b');
       tg.isClosingConfirmationEnabled = true;
-      // Set safe area CSS variable for the TG header
-      const safeTop = tg.safeAreaInset?.top || tg.contentSafeAreaInset?.top || 0;
-      document.documentElement.style.setProperty('--tg-safe-top', `${safeTop}px`);
+      
+      // Request fullscreen mode (Bot API 8.0+)
+      try { tg.requestFullscreen(); } catch(e) {}
+      
+      // Listen for safe area changes and apply CSS variable
+      const applySafeArea = () => {
+        const safeTop = tg.safeAreaInset?.top || 0;
+        const contentTop = tg.contentSafeAreaInset?.top || 0;
+        const totalTop = safeTop + contentTop;
+        document.documentElement.style.setProperty('--tg-safe-top', `${totalTop}px`);
+      };
+      applySafeArea();
+      tg.onEvent('safeAreaChanged', applySafeArea);
+      tg.onEvent('contentSafeAreaChanged', applySafeArea);
+      tg.onEvent('fullscreenChanged', applySafeArea);
     }
   }, []);
 
