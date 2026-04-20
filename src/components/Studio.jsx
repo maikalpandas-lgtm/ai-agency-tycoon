@@ -9,7 +9,7 @@ export default function Studio() {
     generatingVideo, generateProgress, equipmentSlots, selectedSlot,
     getComputePerSec, getAvailableNiches, getStaffMultipliers,
     tap, startGenerateVideo, selectSlot, upgradeEquipmentDirect,
-    videos, tapParticles,
+    videos, tapParticles, level, workspaceLevel
   } = useGameStore();
 
   const cps = getComputePerSec();
