@@ -58,16 +58,17 @@ export default function Studio() {
   };
 
   const bgStyle = {
-    backgroundImage: `linear-gradient(to bottom, rgba(16, 21, 30, 0.4), rgba(16, 21, 30, 1)), url(${getWorkspaceBg(workspaceLevel)})`,
+    backgroundImage: `linear-gradient(to bottom, rgba(16, 21, 30, 0.3) 0%, rgba(16, 21, 30, 0.95) 100%), url(${getWorkspaceBg(workspaceLevel)})`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
   };
 
   return (
-    <div className={`studio workspace-${workspaceLevel}`} style={bgStyle}>
+    <div className="studio">
       {/* === Workspace Tap Area === */}
       <motion.div
-        className={`studio__workspace workspace-${level}`}
+        className={`studio__workspace workspace-${workspaceLevel}`}
+        style={bgStyle}
         onClick={handleTap}
         whileTap={{ scale: 0.98 }}
       >
