@@ -23,6 +23,7 @@ export default function App() {
     compute, dollars, totalFollowers, level,
     offlineEarnings, dismissOffline,
     screenShake, achievementToast, achievements,
+    levelUpModal, dismissLevelUp,
     getComputePerSec, getCurrentLevel, getTotalFollowers,
     tickCompute, tickVideos, checkLevelUp, triggerRandomEvent,
     initGame,
@@ -244,6 +245,44 @@ export default function App() {
               </div>
               <button className="generate-btn" onClick={dismissOffline}>
                 🎮 Продолжить
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* === LEVEL UP MODAL === */}
+      <AnimatePresence>
+        {levelUpModal && (
+          <motion.div
+            className="modal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={dismissLevelUp}
+            style={{ zIndex: 200 }}
+          >
+            <motion.div
+              className="modal-content"
+              initial={{ scale: 0.8, y: 50, rotate: -5 }}
+              animate={{ scale: 1, y: 0, rotate: 0 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              transition={{ type: 'spring', bounce: 0.5 }}
+              onClick={e => e.stopPropagation()}
+              style={{ textAlign: 'center', padding: '40px 20px', border: '1px solid var(--accent-primary)' }}
+            >
+              <div style={{ fontSize: 64, animation: 'pulse 2s infinite' }}>🎉</div>
+              <h1 style={{ marginTop: 16, fontSize: 24, background: 'var(--gradient-cta)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                Новый уровень!
+              </h1>
+              <div style={{ fontSize: 20, fontWeight: 700, margin: '16px 0' }}>
+                {levelUpModal.icon} {levelUpModal.name}
+              </div>
+              <div style={{ color: 'var(--accent-success)', fontWeight: 600, fontSize: 16, marginBottom: 24 }}>
+                {levelUpModal.reward}
+              </div>
+              <button className="generate-btn" onClick={dismissLevelUp}>
+                🚀 Забрать
               </button>
             </motion.div>
           </motion.div>

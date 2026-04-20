@@ -95,6 +95,7 @@ const useGameStore = create((set, get) => ({
   activeEvent: null,
   offlineEarnings: null,
   screenShake: false,
+  levelUpModal: null,
   
   // ===== UI =====
   activeTab: 'studio',
@@ -214,7 +215,8 @@ const useGameStore = create((set, get) => ({
     haptic.tap();
     const particle = {
       id: Date.now() + Math.random(),
-      x, y,
+      x: x + (Math.random() - 0.5) * 40,
+      y: y + (Math.random() - 0.5) * 20,
       value: `+${amount}⚡`,
     };
     set(s => ({
@@ -548,7 +550,8 @@ const useGameStore = create((set, get) => ({
 
     const totalFollowers = state.getTotalFollowers();
     if (totalFollowers >= currentLevel.goalFollowers && state.level < 10) {
-      set(s => ({ level: s.level + 1, screenShake: true }));
+      const nextLevel = GAME_LEVELS.find(l => l.level === state.level + 1);
+      set(s => ({ level: s.level + 1, screenShake: true, levelUpModal: nextLevel }));
       haptic.heavy();
       setTimeout(() => set({ screenShake: false }), 500);
       saveGame(get());
@@ -587,6 +590,7 @@ const useGameStore = create((set, get) => ({
   setActiveTab: (tab) => { set({ activeTab: tab }); haptic.tap(); },
   closePublishModal: () => set({ showPublishModal: false, pendingVideo: null }),
   dismissOffline: () => set({ offlineEarnings: null }),
+  dismissLevelUp: () => set({ levelUpModal: null }),
 
   // --- INIT ---
   initGame: () => {
