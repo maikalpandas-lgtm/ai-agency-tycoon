@@ -589,7 +589,14 @@ const useGameStore = create((set, get) => ({
 
         const channel = state.channels.find(c => c.platform === pid);
         if (channel && channel.followers >= 1000) {
-          dollarsEarned += (newViews / 1000) * platform.incomePerKViews * 5 * mults.incomeMult;
+          let followerMulti = 1;
+          if (channel.followers >= 10000) followerMulti = 2;
+          if (channel.followers >= 50000) followerMulti = 4;
+          if (channel.followers >= 100000) followerMulti = 10;
+          if (channel.followers >= 500000) followerMulti = 20;
+          if (channel.followers >= 1000000) followerMulti = 50;
+
+          dollarsEarned += (newViews / 1000) * platform.incomePerKViews * 50 * followerMulti * mults.incomeMult;
         }
       });
 
@@ -615,7 +622,14 @@ const useGameStore = create((set, get) => ({
       const platform = PLATFORMS[ch.platform];
       let income = 0;
       if (ch.followers >= 1000) {
-        income = (newViews / 1000) * platform.incomePerKViews * 30 * 5 * mults.incomeMult;
+        let followerMulti = 1;
+        if (ch.followers >= 10000) followerMulti = 2;
+        if (ch.followers >= 50000) followerMulti = 4;
+        if (ch.followers >= 100000) followerMulti = 10;
+        if (ch.followers >= 500000) followerMulti = 20;
+        if (ch.followers >= 1000000) followerMulti = 50;
+
+        income = (newViews / 1000) * platform.incomePerKViews * 30 * 50 * followerMulti * mults.incomeMult;
       }
 
       return { ...ch, followers: ch.followers + newFollowers, totalViews: ch.totalViews + newViews, income };
