@@ -27,7 +27,7 @@ export default function Channels() {
       </div>
 
       {/* === EXISTING CHANNELS === */}
-      {channels.map(channel => {
+      {channels.map((channel, index) => {
         const platform = PLATFORMS[channel.platform];
         const niche = NICHES.find(n => n.id === channel.niche);
         const nextMilestone = platform.milestones.find(m => channel.followers < m.followers);
