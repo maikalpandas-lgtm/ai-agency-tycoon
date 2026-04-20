@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { EQUIPMENT, WORKSPACES, NICHES, PLATFORMS, VIDEO_TITLES, GAME_LEVELS, EVENTS, STAFF, ACHIEVEMENTS, randomBetween, randomChoice } from '../data/gameData';
+import { EQUIPMENT, WORKSPACES, NICHES, PLATFORMS, VIDEO_TITLES, GAME_LEVELS, EVENTS, STAFF, ACHIEVEMENTS, RESEARCH_NODES, randomBetween, randomChoice } from '../data/gameData';
 
 // ===== HAPTIC FEEDBACK =====
 const haptic = {
@@ -78,6 +78,10 @@ const useGameStore = create((set, get) => ({
   achievements: [], // unlocked achievement ids
   achievementToast: null, // currently showing achievement
   
+  // ===== RESEARCH & PRESTIGE =====
+  unlockedResearch: [],
+  prestigeTokens: 0,
+  
   // ===== CHANNELS =====
   channels: [],
   
@@ -153,25 +157,51 @@ const useGameStore = create((set, get) => ({
 
   getStaffMultipliers: () => {
     const state = get();
-    let followerMult = 1;
-    let viewMult = 1;
-    let incomeMult = 1;
-    let tapBonus = 0;
-    let equipDiscount = 1;
-    state.staff.forEach(sid => {
-      const s = STAFF.find(st => st.id === sid);
-      if (!s) return;
-      if (s.effect.followerMultiplier) followerMult *= s.effect.followerMultiplier;
-      if (s.effect.viewMultiplier) viewMult *= s.effect.viewMultiplier;
-      if (s.effect.incomeMultiplier) incomeMult *= s.effect.incomeMultiplier;
-      if (s.effect.tapBonus) tapBonus += s.effect.tapBonus;
-      if (s.effect.equipDiscount) equipDiscount *= s.effect.equipDiscount;
+    let mults = { tapBonus: 0, autoTap: 0, autoGenerate: false, interval: 0, followerMult: 1.0, viewMult: 1.0, incomeMult: 1.0, equipDiscount: 1.0, genCostDiscount: 0, viralChanceMult: 1.0, qualityBonus: 0 };
+    
+    state.staff.forEach(staffId => {
+      const s = STAFF.find(x => x.id === staffId);
+      if (s) {
+        if (s.effect.tapBonus) mults.tapBonus += s.effect.tapBonus;
+        if (s.effect.autoTap) mults.autoTap += s.effect.autoTap;
+        if (s.effect.autoGenerate) { mults.autoGenerate = true; mults.interval = s.effect.interval; }
+        if (s.effect.followerMultiplier) mults.followerMult *= s.effect.followerMultiplier;
+        if (s.effect.viewMultiplier) mults.viewMult *= s.effect.viewMultiplier;
+        if (s.effect.incomeMultiplier) mults.incomeMult *= s.effect.incomeMultiplier;
+        if (s.effect.equipDiscount) mults.equipDiscount *= s.effect.equipDiscount;
+      }
     });
-    if (state.frenzyMode) {
-      tapBonus += 100;
-      viewMult *= 10;
+
+    state.unlockedResearch.forEach(rId => {
+      const r = RESEARCH_NODES.find(x => x.id === rId);
+      if (r) {
+        if (r.effect.genCostDiscount) mults.genCostDiscount += r.effect.genCostDiscount;
+        if (r.effect.globalViewMult) mults.viewMult *= r.effect.globalViewMult;
+        if (r.effect.viralChanceMult) mults.viralChanceMult *= r.effect.viralChanceMult;
+        if (r.effect.qualityBonus) mults.qualityBonus += r.effect.qualityBonus;
+        if (r.effect.incomeMult) mults.incomeMult *= r.effect.incomeMult;
+        if (r.effect.equipDiscount) mults.equipDiscount *= r.effect.equipDiscount;
+      }
+    });
+
+    if (state.activeEvent && state.activeEvent.effect) {
+      if (state.activeEvent.effect.equipDiscount) mults.equipDiscount *= state.activeEvent.effect.equipDiscount;
+      if (state.activeEvent.effect.viewMultiplier) mults.viewMult *= state.activeEvent.effect.viewMultiplier;
     }
-    return { followerMult, viewMult, incomeMult, tapBonus, equipDiscount };
+    if (state.frenzyMode) {
+      mults.tapBonus += 100;
+      mults.viewMult *= 10;
+    }
+    
+    // Prestige affects EVERYTHING subtly
+    if (state.prestigeTokens > 0) {
+      const prestigeMult = 1 + (state.prestigeTokens * 0.05); // 5% per token
+      mults.viewMult *= prestigeMult;
+      mults.incomeMult *= prestigeMult;
+      mults.tapBonus += state.prestigeTokens * 2;
+    }
+
+    return mults;
   },
 
   // ===== ACHIEVEMENTS =====
@@ -401,15 +431,63 @@ const useGameStore = create((set, get) => ({
     return true;
   },
 
+  // --- BUY RESEARCH ---
+  buyResearch: (researchId) => {
+    const state = get();
+    const r = RESEARCH_NODES.find(n => n.id === researchId);
+    if (r && state.compute >= r.price && !state.unlockedResearch.includes(researchId)) {
+      set({
+        compute: state.compute - r.price,
+        unlockedResearch: [...state.unlockedResearch, researchId]
+      });
+      saveGame(get());
+      haptic.success();
+      return true;
+    }
+    haptic.error();
+    return false;
+  },
+
+  // --- PRESTIGE ---
+  doPrestige: () => {
+    const state = get();
+    set({
+      compute: 0,
+      dollars: 0,
+      totalFollowers: 0,
+      computePerTap: 1,
+      workspaceLevel: 1,
+      equipmentSlots: [1, null, null, null],
+      channels: [],
+      videos: [],
+      level: 1,
+      selectedNiche: 1,
+      staff: [],
+      // achievements and totalVideosPublished logic stays over prestige
+      unlockedResearch: [],
+      prestigeTokens: state.prestigeTokens + 1,
+      goldenBooster: null,
+      frenzyMode: false,
+    });
+    get().createChannel('tiktok', 1);
+    saveGame(get());
+    haptic.success();
+  },
+
   // --- GENERATE VIDEO ---
   startGenerateVideo: (nicheId) => {
     const state = get();
     const niche = NICHES.find(n => n.id === nicheId);
-    if (!niche || state.compute < niche.computeCost || state.generatingVideo) return false;
+    if (!niche || state.generatingVideo) return false;
+
+    const mults = state.getStaffMultipliers();
+    const actualCost = Math.floor(niche.computeCost * (1 - mults.genCostDiscount));
+
+    if (state.compute < actualCost) return false;
 
     haptic.medium();
     set({
-      compute: state.compute - niche.computeCost,
+      compute: state.compute - actualCost,
       generatingVideo: true,
       generateProgress: 0,
       selectedNiche: nicheId,

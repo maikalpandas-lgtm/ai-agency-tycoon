@@ -176,3 +176,13 @@ export const ACHIEVEMENTS = [
   { id: 'second_platform', name: 'Мультиплатформа', icon: '📱', desc: 'Открой второй канал', reward: 1000, rewardType: 'dollars' },
 ];
 
+// ===== RESEARCH (TECH TREE) =====
+export const RESEARCH_NODES = [
+  { id: 'r1', name: 'Оптимизация рендера', icon: '⚡', desc: '-15% к стоимости Compute при генерации', price: 1000, effect: { genCostDiscount: 0.15 } },
+  { id: 'r2', name: 'Кликбейт превью', icon: '🖼️', desc: '+25% к просмотрам всех видео', price: 5000, effect: { globalViewMult: 1.25 } },
+  { id: 'r3', name: 'AI Аналитика', icon: '📊', desc: '+50% шанс создать Вирусное видео', price: 15000, effect: { viralChanceMult: 1.5 } },
+  { id: 'r4', name: 'Нейро-Арт', icon: '🎨', desc: '+2 уровня к качеству контента', price: 50000, effect: { qualityBonus: 2 } },
+  { id: 'r5', name: 'Монетизация 2.0', icon: '💰', desc: '+30% к доходу в Долларах', price: 200000, effect: { incomeMult: 1.3 } },
+  { id: 'r6', name: 'Квантовый процессор', icon: '⚛️', desc: 'Скидка 40% на всё оборудование', price: 1000000, effect: { equipDiscount: 0.4 } },
+];
+

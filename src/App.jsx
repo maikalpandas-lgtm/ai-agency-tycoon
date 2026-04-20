@@ -5,6 +5,7 @@ import { formatNumber, formatDollars, ACHIEVEMENTS } from './data/gameData';
 import Studio from './components/Studio';
 import Shop from './components/Shop';
 import Channels from './components/Channels';
+import Research from './components/Research';
 import PublishModal from './components/PublishModal';
 import EventToast from './components/EventToast';
 import './index.css';
@@ -13,6 +14,7 @@ const TABS = [
   { id: 'studio', icon: '🏠', label: 'Студия' },
   { id: 'channels', icon: '📱', label: 'Каналы' },
   { id: 'shop', icon: '🛒', label: 'Шоп' },
+  { id: 'research', icon: '🔬', label: 'Лаба' },
   { id: 'friends', icon: '👥', label: 'Друзья' },
   { id: 'settings', icon: '⚙️', label: 'Настр' },
 ];
@@ -27,7 +29,7 @@ export default function App() {
     goldenBooster, frenzyMode, activateFrenzy,
     getComputePerSec, getCurrentLevel, getTotalFollowers,
     tickCompute, tickVideos, checkLevelUp, triggerRandomEvent,
-    initGame,
+    initGame, doPrestige, prestigeTokens
   } = useGameStore();
 
   const currentLevel = getCurrentLevel();
@@ -92,6 +94,7 @@ export default function App() {
       case 'studio': return <Studio />;
       case 'channels': return <Channels />;
       case 'shop': return <Shop />;
+      case 'research': return <Research />;
       case 'friends': return (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60vh', gap: 12 }}>
           <span style={{ fontSize: 48 }}>👥</span>
@@ -106,7 +109,39 @@ export default function App() {
             <div style={{ fontSize: 48 }}>{currentLevel.icon}</div>
             <div className="settings-info__name">Уровень {level} — {currentLevel.name}</div>
             <div className="settings-info__goal">Цель: {formatNumber(currentLevel.goalFollowers)} подписчиков</div>
+            
+            {prestigeTokens > 0 && (
+              <div style={{ marginTop: 8, fontSize: 13, color: 'var(--accent-primary)' }}>
+                ✨ Жетоны Инвестора: {prestigeTokens} (+{prestigeTokens * 5}%)
+              </div>
+            )}
           </div>
+
+          {/* Prestige Mechanism */}
+          {level >= 4 && (
+            <div className="section-header" style={{ marginTop: 16 }}>
+              <span className="section-title">👔 Корпоративный выход</span>
+            </div>
+          )}
+          {level >= 4 && (
+            <div className="settings-info" style={{ borderColor: 'var(--accent-primary)', background: 'rgba(139, 92, 246, 0.05)' }}>
+              <div style={{ fontSize: 13, marginBottom: 12, color: 'var(--text-secondary)' }}>
+                Продай агентство и начни с нуля. Ты получишь 1 Жетон Инвестора (навсегда увеличивает весь доход и бонусы на 5%).
+              </div>
+              <button 
+                className="generate-btn"
+                style={{ background: 'var(--bg-secondary)', border: '1px solid var(--accent-primary)', color: 'var(--accent-primary)', boxShadow: 'none' }}
+                onClick={() => {
+                  if (window.confirm('Точно продать агентство? Весь процесс сбросится, но ты получишь 1 Жетон Инвестора! Жетоны работают в следующих играх навсегда.')) {
+                    doPrestige();
+                    setActiveTab('studio');
+                  }
+                }}
+              >
+                🤝 Продать за 1 Жетон
+              </button>
+            </div>
+          )}
 
           {/* Achievements */}
           <div className="section-header" style={{ marginTop: 16 }}>
