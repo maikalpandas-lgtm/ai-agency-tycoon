@@ -238,7 +238,10 @@ const useGameStore = create((set, get) => ({
     if (state.dollars >= 1) unlock('first_dollar');
     if (state.staff.length > 0) unlock('hire_first');
     if (state.workspaceLevel >= 2) unlock('workspace_upgrade');
+    if (state.workspaceLevel >= 6) unlock('max_workspace');
     if (state.channels.length >= 2) unlock('second_platform');
+    if (state.unlockedResearch.length >= 3) unlock('tech_pioneer');
+    if (state.dollars >= 1000000) unlock('millionaire');
   },
 
   // ===== ACTIONS =====
@@ -451,6 +454,7 @@ const useGameStore = create((set, get) => ({
   // --- PRESTIGE ---
   doPrestige: () => {
     const state = get();
+    state.unlockAchievement('investor_club');
     set({
       compute: 0,
       dollars: 0,
@@ -720,6 +724,7 @@ const useGameStore = create((set, get) => ({
   },
 
   activateFrenzy: () => {
+    get().unlockAchievement('frenzy_master');
     set({ goldenBooster: null, frenzyMode: true });
     haptic.heavy();
     setTimeout(() => set({ frenzyMode: false }), 15000);

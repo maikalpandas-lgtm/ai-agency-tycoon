@@ -1066,6 +1066,80 @@ body {
   color: var(--text-secondary);
   margin-top: 4px;
 }
+
+/* ===== CHANNEL PROFILES ===== */
+.channel-profile {
+  position: relative;
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+}
+
+.channel-banner {
+  width: 100%;
+  height: 60px;
+  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+}
+
+.channel-banner--tier-1 {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.channel-banner--tier-2 {
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+}
+
+.channel-banner--tier-3 {
+  background: linear-gradient(135deg, #f43f5e 0%, #be123c 100%);
+  background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.05) 0px, rgba(255,255,255,0.05) 2px, transparent 2px, transparent 4px), linear-gradient(135deg, #f43f5e 0%, #be123c 100%);
+}
+
+.channel-banner--tier-4 {
+  background: linear-gradient(135deg, #2563eb 0%, #000000 100%);
+  border-bottom: 2px solid #38bdf8;
+  box-shadow: 0 0 20px #38bdf8 inset;
+  background-image: repeating-radial-gradient(circle at 0 0, transparent 0, #000000 10px), repeating-linear-gradient(#2563eb, #2563eb);
+}
+
+.channel-avatar-wrapper {
+  position: absolute;
+  bottom: -24px;
+  left: 16px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+  border: 3px solid var(--bg-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  z-index: 2;
+}
+
+.channel-profile-info {
+  padding: 32px 16px 16px 16px;
+}
+
+.channel-last-video {
+  margin-top: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed var(--border-color);
+  font-size: 12px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.channel-last-video strong {
+  color: var(--text-primary);
+}
 .achievements-grid {
   display: grid;
   grid-template-columns: 1fr;

@@ -174,6 +174,11 @@ export const ACHIEVEMENTS = [
   { id: 'workspace_upgrade', name: 'Расширение', icon: '🏢', desc: 'Улучши рабочее место', reward: 300, rewardType: 'dollars' },
   { id: 'ten_videos', name: 'Конвейер', icon: '🏭', desc: 'Опубликуй 10 видео', reward: 500, rewardType: 'dollars' },
   { id: 'second_platform', name: 'Мультиплатформа', icon: '📱', desc: 'Открой второй канал', reward: 1000, rewardType: 'dollars' },
+  { id: 'frenzy_master', name: 'Ловец удачи', icon: '💾', desc: 'Поймай Золотую дискету', reward: 500, rewardType: 'compute' },
+  { id: 'tech_pioneer', name: 'Учёный', icon: '🔬', desc: 'Изучи 3 технологии', reward: 2000, rewardType: 'dollars' },
+  { id: 'investor_club', name: 'Экзит', icon: '👔', desc: 'Продай агентство', reward: 5000, rewardType: 'dollars' },
+  { id: 'millionaire', name: 'Миллионер', icon: '💎', desc: 'Накопи $1,000,000', reward: 50000, rewardType: 'compute' },
+  { id: 'max_workspace', name: 'Матрица', icon: '🏢', desc: 'Достигни максимального уровня студии', reward: 10000, rewardType: 'dollars' },
 ];
 
 // ===== RESEARCH (TECH TREE) =====

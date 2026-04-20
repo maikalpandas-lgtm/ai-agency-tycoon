@@ -36,45 +36,74 @@ export default function Channels() {
           ? ((channel.followers - (prevMilestone?.followers || 0)) / (nextMilestone.followers - (prevMilestone?.followers || 0))) * 100
           : 100;
 
+        // Visual Tier Logic
+        let tier = 1;
+        let avatarIcon = '🐱'; // Start basic (AI Cats)
+        if (channel.followers >= 1000) { tier = 2; avatarIcon = '🤓'; }
+        if (channel.followers >= 10000) { tier = 3; avatarIcon = '😎'; }
+        if (channel.followers >= 100000) { tier = 4; avatarIcon = '🤖'; } // Cyberpunk AI
+
+        const channelVideos = useGameStore.getState().videos.filter(v => v.platform === channel.platform);
+        const lastVideo = channelVideos.length > 0 ? channelVideos[channelVideos.length - 1] : null;
+
         return (
           <motion.div
             key={channel.id}
             className="channel-card"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            style={{ padding: 0, overflow: 'hidden' }}
           >
-            <div className="channel-card__header">
-              <div className="channel-card__platform">
-                <span className="channel-card__platform-icon">{platform.icon}</span>
-                <span>{platform.name}</span>
-                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{channel.name}</span>
+            {/* Visual Cover Profile */}
+            <div className="channel-profile" style={{ marginBottom: 0, borderRadius: 0, border: 'none' }}>
+              <div className={`channel-banner channel-banner--tier-${tier}`}>
+                <div className="channel-avatar-wrapper">{avatarIcon}</div>
               </div>
-              {channel.income > 0 && (
-                <span className="channel-card__income">{formatDollars(channel.income)}/мес</span>
-              )}
-            </div>
-            <div className="channel-card__stats">
-              <span className="channel-card__stat">
-                👥 <span className="channel-card__stat-value">{formatNumber(channel.followers)}</span>
-              </span>
-              <span className="channel-card__stat">
-                👁 <span className="channel-card__stat-value">{formatNumber(channel.totalViews)}</span> просм.
-              </span>
-              <span className="channel-card__stat">
-                {niche?.icon} {niche?.name}
-              </span>
-            </div>
-            <div className="channel-card__progress">
-              <div
-                className={`channel-card__progress-fill channel-card__progress-fill--${channel.platform}`}
-                style={{ width: `${Math.min(progress, 100)}%` }}
-              />
-            </div>
-            {nextMilestone && (
-              <div className="channel-card__milestone">
-                {formatNumber(channel.followers)} / {formatNumber(nextMilestone.followers)} → {nextMilestone.label}
+              <div className="channel-profile-info">
+                <div className="channel-card__header" style={{ padding: 0 }}>
+                  <div className="channel-card__platform" style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'flex-start' }}>
+                    <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                      <span className="channel-card__platform-icon" style={{ fontSize: 16 }}>{platform.icon}</span>
+                      <span style={{ fontSize: 18, fontWeight: 700 }}>{channel.name}</span>
+                    </div>
+                    <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{platform.name}</span>
+                  </div>
+                  {channel.income > 0 && (
+                    <span className="channel-card__income" style={{ fontSize: 16 }}>{formatDollars(channel.income)}/мес</span>
+                  )}
+                </div>
+
+                <div className="channel-card__stats" style={{ marginTop: 16 }}>
+                  <span className="channel-card__stat">
+                    👥 <span className="channel-card__stat-value">{formatNumber(channel.followers)}</span>
+                  </span>
+                  <span className="channel-card__stat">
+                    👁 <span className="channel-card__stat-value">{formatNumber(channel.totalViews)}</span> просм.
+                  </span>
+                  <span className="channel-card__stat">
+                    {niche?.icon} {niche?.name}
+                  </span>
+                </div>
+
+                <div className="channel-card__progress">
+                  <div
+                    className={`channel-card__progress-fill channel-card__progress-fill--${channel.platform}`}
+                    style={{ width: `${Math.min(progress, 100)}%` }}
+                  />
+                </div>
+                {nextMilestone && (
+                  <div className="channel-card__milestone">
+                    {formatNumber(channel.followers)} / {formatNumber(nextMilestone.followers)} → {nextMilestone.label}
+                  </div>
+                )}
+
+                {lastVideo && (
+                  <div className="channel-last-video">
+                    🎬 Последнее: <strong>{lastVideo.title}</strong>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </motion.div>
         );
       })}
