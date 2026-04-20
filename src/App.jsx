@@ -40,8 +40,10 @@ export default function App() {
       tg.expand();
       tg.setHeaderColor('#09090b');
       tg.setBackgroundColor('#09090b');
-      // Disable closing by swipe down
       tg.isClosingConfirmationEnabled = true;
+      // Set safe area CSS variable for the TG header
+      const safeTop = tg.safeAreaInset?.top || tg.contentSafeAreaInset?.top || 0;
+      document.documentElement.style.setProperty('--tg-safe-top', `${safeTop}px`);
     }
   }, []);
 
