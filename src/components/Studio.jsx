@@ -49,8 +49,22 @@ export default function Studio() {
     return () => clearInterval(interval);
   }, [videos]);
 
+  // Map workspace level to background tier image
+  const getWorkspaceBg = (lvl) => {
+    if (lvl <= 1) return '/ai-agency-tycoon/bg/tier1.png';
+    if (lvl <= 3) return '/ai-agency-tycoon/bg/tier2.png';
+    if (lvl <= 5) return '/ai-agency-tycoon/bg/tier3.png';
+    return '/ai-agency-tycoon/bg/tier4.png';
+  };
+
+  const bgStyle = {
+    backgroundImage: `linear-gradient(to bottom, rgba(16, 21, 30, 0.4), rgba(16, 21, 30, 1)), url(${getWorkspaceBg(workspaceLevel)})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+  };
+
   return (
-    <div className="studio">
+    <div className={`studio workspace-${workspaceLevel}`} style={bgStyle}>
       {/* === Workspace Tap Area === */}
       <motion.div
         className={`studio__workspace workspace-${level}`}
