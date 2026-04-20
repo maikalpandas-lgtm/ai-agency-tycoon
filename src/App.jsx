@@ -21,6 +21,7 @@ export default function App() {
   const {
     activeTab, setActiveTab,
     compute, dollars, totalFollowers, level,
+    offlineEarnings, dismissOffline,
     getComputePerSec, getCurrentLevel, getTotalFollowers,
     tickCompute, tickVideos, checkLevelUp, triggerRandomEvent,
     initGame,
@@ -173,6 +174,49 @@ export default function App() {
       {/* === MODALS & OVERLAYS === */}
       <PublishModal />
       <EventToast />
+
+      {/* === OFFLINE EARNINGS MODAL === */}
+      <AnimatePresence>
+        {offlineEarnings && (
+          <motion.div
+            className="modal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={dismissOffline}
+          >
+            <motion.div
+              className="modal-content"
+              initial={{ y: 300 }}
+              animate={{ y: 0 }}
+              exit={{ y: 300 }}
+              transition={{ type: 'spring', damping: 25 }}
+              onClick={e => e.stopPropagation()}
+              style={{ textAlign: 'center', paddingTop: 32, paddingBottom: 32 }}
+            >
+              <div style={{ fontSize: 48 }}>🌙</div>
+              <h2 style={{ marginTop: 12 }}>С возвращением!</h2>
+              <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginTop: 8 }}>
+                Пока тебя не было ({Math.floor(offlineEarnings.seconds / 60)} мин),<br/>
+                оборудование заработало:
+              </p>
+              <div style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: 28,
+                fontWeight: 700,
+                color: 'var(--accent-primary)',
+                textShadow: '0 0 20px rgba(139,92,246,0.3)',
+                margin: '16px 0',
+              }}>
+                +{formatNumber(offlineEarnings.compute)} ⚡
+              </div>
+              <button className="generate-btn" onClick={dismissOffline}>
+                🎮 Продолжить
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
