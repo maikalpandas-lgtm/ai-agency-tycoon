@@ -41,10 +41,10 @@ export default function App() {
       tg.setHeaderColor('#09090b');
       tg.setBackgroundColor('#09090b');
       tg.isClosingConfirmationEnabled = true;
-      
-      // Request fullscreen mode (Bot API 8.0+)
-      try { tg.requestFullscreen(); } catch(e) {}
-      
+
+      // Disable swipe-to-close so tapping doesn't dismiss the app
+      if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
+
       // Listen for safe area changes and apply CSS variable
       const applySafeArea = () => {
         const safeTop = tg.safeAreaInset?.top || 0;
@@ -52,6 +52,16 @@ export default function App() {
         const totalTop = safeTop + contentTop;
         document.documentElement.style.setProperty('--tg-safe-top', `${totalTop}px`);
       };
+
+      // Request fullscreen after a short delay (needs expand first)
+      setTimeout(() => {
+        if (tg.requestFullscreen) {
+          tg.requestFullscreen();
+        }
+        // Apply safe area after fullscreen change
+        setTimeout(applySafeArea, 300);
+      }, 500);
+
       applySafeArea();
       tg.onEvent('safeAreaChanged', applySafeArea);
       tg.onEvent('contentSafeAreaChanged', applySafeArea);
