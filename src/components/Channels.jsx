@@ -38,19 +38,10 @@ export default function Channels() {
 
         // Visual Tier Logic
         let tier = 1;
-        if (channel.followers >= 1000) tier = 2;
-        if (channel.followers >= 10000) tier = 3;
-        if (channel.followers >= 100000) tier = 4;
-          
-        let avatarSrc = '/ai-agency-tycoon/avatars/tier1.png';
-        if (tier >= 2) avatarSrc = '/ai-agency-tycoon/avatars/tier2.png';
-        if (tier >= 3) avatarSrc = '/ai-agency-tycoon/avatars/tier3.png';
-        if (tier >= 4) avatarSrc = '/ai-agency-tycoon/avatars/tier4.png';
-
-        let bgSrc = '/ai-agency-tycoon/bg/tier1.png';
-        if (tier >= 2) bgSrc = '/ai-agency-tycoon/bg/tier2.png';
-        if (tier >= 3) bgSrc = '/ai-agency-tycoon/bg/tier3.png';
-        if (tier >= 4) bgSrc = '/ai-agency-tycoon/bg/tier4.png';
+        let avatarIcon = '🐱';
+        if (channel.followers >= 1000) { tier = 2; avatarIcon = '🤓'; }
+        if (channel.followers >= 10000) { tier = 3; avatarIcon = '😎'; }
+        if (channel.followers >= 100000) { tier = 4; avatarIcon = '🤖'; }
 
         // Check if any video is viral
         const hasViral = videos.some(v => v.platforms[channel.platform] && v.status === 'viral');
@@ -62,18 +53,15 @@ export default function Channels() {
           <motion.div
             key={channel.id}
             className="channel-card"
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: index * 0.1 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
             style={{ padding: 0, overflow: 'hidden' }}
           >
             {/* Visual Cover Profile */}
             <div className="channel-profile" style={{ marginBottom: 0, borderRadius: 0, border: 'none' }}>
-              <div className={`channel-banner channel-banner--tier-${tier}`} style={{ backgroundImage: `url(${bgSrc})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+              <div className={`channel-banner channel-banner--tier-${tier}`}>
                 {hasViral && <div className="viral-badge">🔴 VIRAL</div>}
-                <div className="channel-avatar-wrapper" style={{ overflow: 'hidden' }}>
-                  <img src={avatarSrc} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                </div>
+                <div className="channel-avatar-wrapper">{avatarIcon}</div>
               </div>
               <div className="channel-profile-info">
                 <div className="channel-card__header" style={{ padding: 0 }}>
